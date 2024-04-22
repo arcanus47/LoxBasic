@@ -1,0 +1,7 @@
+VAR i = 0
+
+FOR i = 1 TO 10 THEN
+    PRINT(i)
+    CONTINUE
+END
+
