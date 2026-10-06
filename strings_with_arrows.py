@@ -1,26 +1,33 @@
 def string_with_arrows(text, pos_start, pos_end):
-	result = ''
+    if not text:
+        return ''
 
-	# Calcular indices
-	idx_start = max(text.rfind('\n', 0, pos_start.idx), 0)
-	idx_end = text.find('\n', idx_start + 1)
-	if idx_end < 0: idx_end = len(text)
-	
-	# Genera cada linea
-	line_count = pos_end.ln - pos_start.ln + 1
-	for i in range(line_count):
-		# Calcular columnas de lInea
-		line = text[idx_start:idx_end]
-		col_start = pos_start.col if i == 0 else 0
-		col_end = pos_end.col if i == line_count - 1 else len(line) - 1
+    lines = text.splitlines()
 
-		# Agregar al resultado
-		result += line + '\n'
-		result += ' ' * col_start + '^' * (col_end - col_start)
+    start_line = max(0, min(pos_start.ln, len(lines) - 1))
+    end_line = max(0, min(pos_end.ln, len(lines) - 1))
 
-		# Vuelva a calcular indices
-		idx_start = idx_end
-		idx_end = text.find('\n', idx_start + 1)
-		if idx_end < 0: idx_end = len(text)
+    result = []
 
-	return result.replace('\t', '')
+    for line_index in range(start_line, end_line + 1):
+        line = lines[line_index]
+
+        if line_index == start_line:
+            col_start = max(0, min(pos_start.col, len(line)))
+        else:
+            col_start = 0
+
+        if line_index == end_line:
+            col_end = max(0, min(pos_end.col, len(line)))
+        else:
+            col_end = len(line)
+
+        if col_end <= col_start:
+            col_end = min(col_start + 1, len(line))
+
+        result.append(line)
+
+        marker_length = max(1, col_end - col_start)
+        result.append(' ' * col_start + '^' * marker_length)
+
+    return '\n'.join(result).replace('\t', '    ')

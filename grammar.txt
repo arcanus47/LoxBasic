@@ -1,28 +1,44 @@
-statements  : NEWLINE* statement (NEWLINE+ statement)* NEWLINE*
+program     : NEWLINE* statements? NEWLINE* EOF
 
-statement		: KEYWORD:RETURN expr?
-						: KEYWORD:CONTINUE
-						: KEYWORD:BREAK
-						: expr
+statements  : statement (NEWLINE+ statement)*
 
-expr        : KEYWORD:VAR IDENTIFIER EQ expr
-            : comp-expr ((KEYWORD:AND|KEYWORD:OR) comp-expr)*           
+statement   : KEYWORD:RETURN expr?
+            : KEYWORD:CONTINUE
+            : KEYWORD:BREAK
+            : expr
 
-comp-expr   : NOT comp-expr
-            : arith-expr ((EE|LT|GT|LTE|GTE) arith-expr)*
+expr        : KEYWORD:VAR IDENTIFIER (EQ expr)?
+            : assignment-expr
 
-arith-expr  :	term ((PLUS|MINUS) term)*
+assignment-expr
+            : logical-expr ((EQ|PLUSEQ|MINUSEQ|MULEQ|DIVEQ|MODEQ) assignment-expr)?
+            
+logical-expr
+            : comp-expr ((KEYWORD:AND|KEYWORD:OR) comp-expr)*
 
-term        : factor ((MUL|DIV) factor)*
+comp-expr   : (KEYWORD:NOT|NOT) comp-expr
+            : arith-expr ((EE|NE|LT|GT|LTE|GTE) arith-expr)*
+
+arith-expr  : term ((PLUS|MINUS) term)*
+
+term        : factor ((MUL|DIV|MOD) factor)*
 
 factor      : (PLUS|MINUS) factor
             : power
 
-power       : call (POW factor)*
+power       : call ((POW) factor)?
 
-call        : atom (LPAREN (expr (COMMA expr)*)? RPAREN)?
+call        : atom
+              (LPAREN (expr (COMMA expr)*)? COMMA? RPAREN
+              | LSQUARE expr RSQUARE)*
 
-atom        : INT|FLOAT|STRING|IDENTIFIER
+atom        : INT
+            : FLOAT
+            : STRING
+            : IDENTIFIER
+            : KEYWORD:TRUE
+            : KEYWORD:FALSE
+            : KEYWORD:NULL
             : LPAREN expr RPAREN
             : list-expr
             : if-expr
@@ -30,30 +46,60 @@ atom        : INT|FLOAT|STRING|IDENTIFIER
             : while-expr
             : func-def
 
-list-expr   : LSQUARE (expr (COMMA expr)*)? RSQUARE
+list-expr   : LSQUARE
+              (expr (COMMA expr)* COMMA?)?
+              RSQUARE
 
 if-expr     : KEYWORD:IF expr KEYWORD:THEN
-              (statement if-expr-b|if-expr-c?)
-            | (NEWLINE statements KEYWORD:END|if-expr-b|if-expr-c)
+              if-body
+              if-branches?
+              KEYWORD:END?
 
-if-expr-b   : KEYWORD:ELIF expr KEYWORD:THEN
-              (statement if-expr-b|if-expr-c?)
-            | (NEWLINE statements KEYWORD:END|if-expr-b|if-expr-c)
+if-body     : statement
+            : NEWLINE statements NEWLINE*
 
-if-expr-c   : KEYWORD:ELSE
-              statement
-            | (NEWLINE statements KEYWORD:END)
+if-branches : KEYWORD:ELIF expr KEYWORD:THEN
+              if-body
+              if-branches?
+            : KEYWORD:ELSE
+              else-body
 
-for-expr    : KEYWORD:FOR IDENTIFIER EQ expr KEYWORD:TO expr 
-              (KEYWORD:STEP expr)? KEYWORD:THEN
-              statement
-            | (NEWLINE statements KEYWORD:END)
+else-body   : statement
+            : NEWLINE statements NEWLINE*
+
+for-expr    : KEYWORD:FOR IDENTIFIER EQ expr
+              KEYWORD:TO expr
+              (KEYWORD:STEP expr)?
+              KEYWORD:THEN
+              for-body
+              KEYWORD:END?
+
+            : KEYWORD:FOR IDENTIFIER KEYWORD:IN expr
+              KEYWORD:THEN
+              for-body
+              KEYWORD:END?
+
+for-body    : statement
+            : NEWLINE statements NEWLINE*
 
 while-expr  : KEYWORD:WHILE expr KEYWORD:THEN
-              statement
-            | (NEWLINE statements KEYWORD:END)
+              while-body
+              KEYWORD:END?
+
+while-body  : statement
+            : NEWLINE statements NEWLINE*
 
 func-def    : KEYWORD:FUN IDENTIFIER?
-              LPAREN (IDENTIFIER (COMMA IDENTIFIER)*)? RPAREN
-              (ARROW expr)
-            | (NEWLINE statements KEYWORD:END)
+              LPAREN
+              (IDENTIFIER (COMMA IDENTIFIER)* COMMA?)?
+              RPAREN
+              ARROW expr
+
+            : KEYWORD:FUN IDENTIFIER?
+              LPAREN
+              (IDENTIFIER (COMMA IDENTIFIER)* COMMA?)?
+              RPAREN
+              NEWLINE
+              statements
+              NEWLINE*
+              KEYWORD:END
