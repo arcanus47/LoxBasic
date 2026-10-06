@@ -1,0 +1,3 @@
+VAR nombre = "LoxBasic"
+
+PRINT("Hola desde " + nombre)
